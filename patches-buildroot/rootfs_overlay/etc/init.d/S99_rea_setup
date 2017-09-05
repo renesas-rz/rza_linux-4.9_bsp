@@ -1,0 +1,48 @@
+#!/bin/sh
+
+if [ -e /dev/ttySC2 ] ; then
+  SERIAL_TTY=/dev/ttySC2
+fi
+if [ -e /dev/ttySC0 ] ; then
+  SERIAL_TTY=/dev/ttySC0
+fi
+
+
+# Only run at system boot, not at system shutdown
+if [ "$1" != "start" ] ; then
+  exit
+fi
+
+
+# unbind displaying console messages on the LCD (and blinking cursor)
+if [ -e /sys/class/vtconsole/vtcon1/bind ]; then
+  echo 0 > /sys/class/vtconsole/vtcon1/bind
+  echo 0 > /sys/class/graphics/fbcon/cursor_blink
+fi
+
+# put splash image on LCD
+if [ -e /sys/devices/platform/fcff7400.display/graphics/fb0/bits_per_pixel ] ; then
+    # only if the file exists
+    if [ -e /root/images/renesas_logo-800x480.jpg ]; then
+      fbv -s 1 -c -f /root/images/renesas_logo-800x480.jpg
+    fi
+fi
+
+alias ll='ls -lap'
+
+# set prompt
+#PS1='$ '
+PS1='\[\e[1;32m\]$\[\e[00m\] '
+
+### ALSA Sound Settings ####
+QUIET='-q'
+
+# Set up ALSA sound paramters
+#  'alsactl restore' pulls from /var/lib/alsa/asound.state
+alsactl restore
+#amixer $QUIET cset name="SSI0 Control" 1
+
+# Set LINE out volume (Left% , Right%)
+# amixer $QUIET sset 'Digital Audio Input',0 50%,50%
+
+
