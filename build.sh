@@ -694,6 +694,27 @@ if [ "$1" == "kernel" ] || [ "$1" == "k" ] ; then
       echo "Reconfiguring for new board..."
       make ${BOARD}_defconfig
     fi
+    # To build a uImage, you need to specify LOADADDR.
+    if [ "$BOARD" == "rskrza1" ] || [ "$BOARD" == "genmai" ] || [ "$BOARD" == "ylcdrza1h" ] ; then
+      MY_LOADADDR='LOADADDR=0x08008000'
+    fi
+    if [ "$BOARD" == "streamit" ] ; then
+      MY_LOADADDR='LOADADDR=0x0C008000'
+    fi
+    if [ "$3" != "" ] ; then
+      MY_LOADADDR=LOADADDR=$3
+    fi
+    if [ "$MY_LOADADDR" == "" ] ; then
+      banner_red "Missing load address (LOADADDR)"
+      echo "When building a uImage, you need to specify the load address on the kernel"
+      echo "build command line (make LOADADDR=0x55555555 uImage) so u-boot"
+      echo "will know where in RAM to decompress the kernel to."
+      echo "Please specify that address according to your SDRAM location."
+      echo "Examples:"
+      echo "   ./build.sh kernel uImage 0x08008000"
+      echo "   ./build.sh kernel uImage 0x0C008000"
+      exit
+    fi
   fi
   if [ "$2" == "xipImage" ] ;then
     IMG_BUILD=2
@@ -707,6 +728,9 @@ if [ "$1" == "kernel" ] || [ "$1" == "k" ] ; then
       echo "Reconfiguring for new board..."
       make ${BOARD}_xip_defconfig
     fi
+
+    # LOADADDR is not needed when building a xipImage
+    MY_LOADADDR=
   fi
 
   if [ "$IMG_BUILD" != "0" ] ; then
@@ -715,8 +739,8 @@ if [ "$1" == "kernel" ] || [ "$1" == "k" ] ; then
     #       we could have created a empty ".scmversion" file in the root.
     # NOTE: We have to make the Device Tree Blobs too, so we'll add 'dtbs' to
     #       the command line
-    echo -e "make LOCALVERSION= -j$BUILD_THREADS $2 dtbs\n"
-    make LOCALVERSION= -j$BUILD_THREADS $2 dtbs
+    echo -e "make $MY_LOADADDR LOCALVERSION= -j$BUILD_THREADS $2 dtbs\n"
+    make $MY_LOADADDR LOCALVERSION= -j$BUILD_THREADS $2 dtbs
 
     if [ ! -e vmlinux ] ; then
       # did not build, so exit
