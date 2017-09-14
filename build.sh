@@ -174,6 +174,9 @@ BRD_NAMES[5]=? ; BRD_DESC[5]="Custom Board"
 
 fi
 
+# save the current board so can know the user selected a new one
+ORIGINAL_BOARD=$BOARD
+
 BRD_CNT=$(echo ${#BRD_NAMES[@]})
 BRD_CNT_MAX_INDEX=$(expr $BRD_CNT - 1)
 
@@ -336,6 +339,14 @@ BRD_CNT_MAX_INDEX=$(expr $BRD_CNT - 1)
 
   if [ "$(grep "Save" /tmp/answer.txt)" != "" ] ; then
     save_config
+
+    # If our board selection has changed, then delete the .config files
+    # for u-boot and kernel which will force a new defconfig
+    if [ "$ORIGINAL_BOARD" != "$BOARD" ] ; then
+      rm $OUTDIR/u-boot-2017.05/.config
+      rm $OUTDIR/linux-4.9/.config
+    fi
+
     break;
   fi
 
@@ -688,12 +699,14 @@ if [ "$1" == "kernel" ] || [ "$1" == "k" ] ; then
       # Need to configure kernel first
       make ${BOARD}_defconfig
     fi
+
     # re-configure kernel if we changed target board
-    CHECK=$(grep -i CONFIG_MACH_${BOARD}=y .config )
-    if [ "$CHECK" == "" ] ; then
-      echo "Reconfiguring for new board..."
-      make ${BOARD}_defconfig
-    fi
+    #CHECK=$(grep -i CONFIG_MACH_${BOARD}=y .config )
+    #if [ "$CHECK" == "" ] ; then
+    #  echo "Reconfiguring for new board..."
+    #  make ${BOARD}_defconfig
+    #fi
+
     # To build a uImage, you need to specify LOADADDR.
     if [ "$BOARD" == "rskrza1" ] || [ "$BOARD" == "genmai" ] || [ "$BOARD" == "ylcdrza1h" ] ; then
       MY_LOADADDR='LOADADDR=0x08008000'
@@ -722,12 +735,13 @@ if [ "$1" == "kernel" ] || [ "$1" == "k" ] ; then
       # Need to configure kernel first
       make ${BOARD}_xip_defconfig
     fi
+
     # re-configure kernel if we changed target board
-    CHECK=$(grep -i CONFIG_MACH_${BOARD}=y .config )
-    if [ "$CHECK" == "" ] ; then
-      echo "Reconfiguring for new board..."
-      make ${BOARD}_xip_defconfig
-    fi
+    #CHECK=$(grep -i CONFIG_MACH_${BOARD}=y .config )
+    #if [ "$CHECK" == "" ] ; then
+    #  echo "Reconfiguring for new board..."
+    #  make ${BOARD}_xip_defconfig
+    #fi
 
     # LOADADDR is not needed when building a xipImage
     MY_LOADADDR=
@@ -818,11 +832,11 @@ if [ "$1" == "u-boot" ] || [ "$1" == "u" ] ; then
   fi
 
   # re-configure u-boot if we changed target board
-  CHECK=$(grep CONFIG_SYS_BOARD .config | grep $BOARD)
-  if [ "$CHECK" == "" ] ; then
-    echo "Reconfiguring for new board..."
-    make ${BOARD}_config
-  fi
+  #CHECK=$(grep CONFIG_SYS_BOARD .config | grep $BOARD)
+  #if [ "$CHECK" == "" ] ; then
+  #  echo "Reconfiguring for new board..."
+  #  make ${BOARD}_config
+  #fi
 
   # Build u-boot
   if [ "$2" == "" ] ;then
