@@ -131,7 +131,6 @@ BRD_NAMES[0]=rskrza1 ; BRD_DESC[0]="RSK (RZ/A1H)"
  BRD_ROOTFS[0]=0x18800000
    BRD_QSPI[0]=DUAL
 
-if [ "0" = "1" ] ; then  # these boards are not supported yet
 BRD_NAMES[1]=genmai ; BRD_DESC[1]="GENMAI (RZA1H)"
   BRD_DLRAM[1]=0x08000000
   BRD_UBOOT[1]=0x18000000
@@ -171,8 +170,6 @@ BRD_NAMES[5]=? ; BRD_DESC[5]="Custom Board"
  BRD_KERNEL[5]=0x18200000
  BRD_ROOTFS[5]=0x18800000
    BRD_QSPI[5]=SINGLE
-
-fi
 
 # save the current board so can know the user selected a new one
 ORIGINAL_BOARD=$BOARD
