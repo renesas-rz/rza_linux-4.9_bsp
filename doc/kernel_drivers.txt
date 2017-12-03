@@ -150,6 +150,10 @@ CONFIG_PINCTRL_RZA1
 	> Pin controllers
 		[*] Renesas RZ/A1 gpio and pinctrl driver
 
+  NOTE: To control GPIO pins from userspace, you will need
+	CONFIG_GPIOLIB=y
+	CONFIG_GPIO_SYSFS=y
+
 Display
 ---------------------------------------------------
 FB_VDC5
