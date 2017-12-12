@@ -1209,6 +1209,15 @@ fi
 if [ "$1" == "axfs" ] ; then
   banner_yellow "Building axfs"
 
+  if [ -e output/buildroot-$BR_VERSION/output/images/rootfs.axfs ] && [ "$2" == "" ]; then
+    banner_red "AXFS image already built"
+    echo "Now, AXFS images are now automatically built by Buildroot".
+    echo "So, there is no more need for this command anymore".
+    echo "You can find your AXFS image here:"
+    echo "  output/buildroot-$BR_VERSION/output/images/rootfs.axfs"
+    exit
+  fi
+
   cd $OUTDIR
 
   if [ ! -e axfs/mkfs.axfs ] ; then
@@ -1235,6 +1244,24 @@ if [ "$1" == "axfs" ] ; then
 
 
   cd axfs
+
+  if [ "$2" != "" ] ; then
+    if [ "$3" == "" ] ; then
+    echo ""
+    banner_red "Missing output file name"
+    echo "Usage: ./build.sh axfs {full-path-to-directory} {output-filename}"
+    exit
+   fi
+    ./mkfs.axfs -s -a $2 $3
+
+    if [ -e $3 ] ; then
+      banner_green "axfs Build Successful"
+      echo -n " File: "
+      echo `ls $(pwd)/$3`
+    fi
+    exit
+  fi
+
 
   # NOTE: If the 's' attribute is set on busybox executable (which it is by default when
   #   Buildroot builds it), and the file owner is not 'root' (which it will not be because
