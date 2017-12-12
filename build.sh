@@ -371,53 +371,76 @@ fi
 # jlink
 ###############################################################################
 if [ "$1" == "jlink" ] || [ "$1" == "jlink_dual" ] ; then
-  echo "Download binary files to on-board RAM"
+  echo "-------------------------------------------------------"
+  echo "Download binary files to on-board RAM or SPI Flash"
+  echo "-------------------------------------------------------"
+
+  if [ "$2" == "ui" ] ; then
+    ./jlink.sh
+    exit
+  fi
+
+FILE1=output/u-boot-2017.05/u-boot.bin
+FILE2=output/linux-4.9/arch/arm/boot/dts/r7s72100-$BOARD.dtb
+FILE3=output/linux-4.9/arch/arm/boot/uImage
+FILE4=output/linux-4.9/arch/arm/boot/xipImage
+FILE5=output/buildroot-$BR_VERSION/output/images/rootfs.squashfs
+FILE6=output/buildroot-$BR_VERSION/output/images/rootfs.axfs
+FILE7=output/axfs/rootfs.axfs.bin
 
   if [ "$2" == "" ] ; then
     echo "
 usage: ./build.sh jlink {FILE} {ADDRESS}
-   FILE: The path to the file to download.
-ADDRESS: (Optional) Default is $DLRAM_ADDR (beginning of your RAM)
+     FILE: The path to the file to download.
+  ADDRESS: (Optional) RAM or SPI Flash. Default is $DLRAM_ADDR (beginning of your RAM)
 
-Examples:
-
-  #---------------------------------------------------------------------
-  # These examples download the images to RAM, then you would use u-boot
-  # to program the images from RAM to QSPI flash
-  #---------------------------------------------------------------------
-
-  # u-boot
-  ./build.sh jlink output/u-boot-2017.05/u-boot.bin
-
-  # Device Tree Blob
-  ./build.sh jlink output/linux-4.9/arch/arm/boot/dts/r7s72100-$BOARD.dtb
-
-  # Kernel
-  ./build.sh jlink output/linux-4.9/arch/arm/boot/uImage
-  ./build.sh jlink output/linux-4.9/arch/arm/boot/xipImage
-
-  # Root File System
-  ./build.sh jlink output/buildroot-$BR_VERSION/output/images/rootfs.squashfs
-  ./build.sh jlink output/axfs/rootfs.axfs.bin
-
-  #---------------------------------------------------------------------
-  # These examples program the image directly into QSPI using the J-LINK
-  # NOTE that the J-Link can only directly program a SINGLE SPI flash
-  #---------------------------------------------------------------------
-
+Examples: (full path)
   ./build.sh jlink output/u-boot-2017.05/u-boot.bin 0x18000000
 
-  ./build.sh jlink output/linux-4.9/arch/arm/boot/dts/r7s72100-$BOARD.dtb $DTB_ADDR
-"
-  if [ "$QSPI" == "SINGLE" ] ; then
-   echo \
-"  ./build.sh jlink output/linux-4.9/arch/arm/boot/uImage $KERNEL_ADDR
-  ./build.sh jlink output/linux-4.9/arch/arm/boot/xipImage $KERNEL_ADDR
+Examples: (shortcut names)
+  ./build.sh jlink u-boot              # u-boot
+  ./build.sh jlink dtb                 # Device Tree"
+    if [ -e $FILE3 ] ; then echo "  ./build.sh jlink uImage              # Linux Kernel"
+    fi
+    if [ -e $FILE4 ] ; then echo "  ./build.sh jlink xipImage            # Linux XIP Kernel"
+    fi
+    if [ -e $FILE5 ] ; then echo "  ./build.sh jlink rootfs_squashfs     # Root File System"
+    fi
+    if [ -e $FILE6 ] || [ -e $FILE7 ] ; then echo "  ./build.sh jlink rootfs_axfs         # Root File System"
+    fi
 
-  ./build.sh jlink output/buildroot-$BR_VERSION/output/images/rootfs.squashfs $ROOTFS_ADDR
-  ./build.sh jlink output/axfs/rootfs.axfs.bin $ROOTFS_ADDR
+    echo "
+Examples: (file number)
+  ./build.sh jlink 1
+  File Numbers:"
+    if [ -e $FILE1 ] ; then  echo "    1 = $FILE1"
+    fi
+    if [ -e $FILE2 ] ; then  echo "    2 = $FILE2"
+    fi
+    if [ -e $FILE3 ] ; then  echo "    3 = $FILE3"
+    fi
+    if [ -e $FILE4 ] ; then  echo "    4 = $FILE4"
+    fi
+    if [ -e $FILE5 ] ; then  echo "    5 = $FILE5"
+    fi
+    if [ -e $FILE6 ] ; then  echo "    6 = $FILE6"
+    fi
+    if [ -e $FILE7 ] ; then  echo "    7 = $FILE7"
+    fi
+
+  echo "
+Examples: (Download directory to QSPI Flash)
+  ./build.sh jlink u-boot 0x18000000
+  ./build.sh jlink dtb $DTB_ADDR
 "
-  fi
+    if [ "$QSPI" == "SINGLE" ] ; then
+      echo \
+"  ./build.sh jlink uImage $KERNEL_ADDR
+  ./build.sh jlink xipImage $KERNEL_ADDR
+  ./build.sh jlink rootfs_squashfs $ROOTFS_ADDR
+  ./build.sh jlink rootfs_axfs $ROOTFS_ADDR
+"
+    fi
     echo -ne "\033[1;31m" # RED TEXT
     echo -ne "\nNOTE:"
     echo -ne "\033[00m" # END TEXT COLOR
@@ -426,22 +449,69 @@ Examples:
     exit
  fi
 
-  # Shortcuts for common images to program
-  # change our passed arguments to full paths
+  # Shortcuts
+  # Change our passed arguments to full paths
   if [ "$2" == "uboot" ] || [ "$2" == "u-boot" ] ; then
-    set -- $1 output/u-boot-2017.05/u-boot.bin 0x18000000
+    if [ "$3" == "" ] ; then
+      set -- $1 $FILE1 0x18000000
+    else
+      set -- $1 $FILE1 $3
+    fi
   fi
   if [ "$2" == "dtb" ] ; then
-    set -- $1 output/linux-4.9/arch/arm/boot/dts/r7s72100-$BOARD.dtb $DTB_ADDR
+    if [ "$3" == "" ] ; then
+      set -- $1 $FILE2 $DTB_ADDR
+    else
+      set -- $1 $FILE2 $3
+    fi
   fi
-  if [ "$2" == "uImage" ] || [ "$2" == "ku" ]; then
-    set -- $1 output/linux-4.9/arch/arm/boot/uImage $3
+  if [ "$2" == "uImage" ] ; then
+    set -- $1 $FILE3 $3
   fi
-  if [ "$2" == "xipImage" ] || [ "$2" == "kx" ] ; then
-    set -- $1 output/linux-4.9/arch/arm/boot/xipImage $3
+  if [ "$2" == "xipImage" ] ; then
+    set -- $1 $FILE4 $3
   fi
-  if [ "$2" == "rootfs_axfs" ] || [ "$2" == "ra" ] ; then
-    set -- $1 output/axfs/rootfs.axfs.bin $3
+  if [ "$2" == "rootfs_squashfs" ] ; then
+    set -- $1 $FILE5 $3
+  fi
+  if [ "$2" == "rootfs_axfs" ] ; then
+    # Choose Buildroot as default
+    if [ -e $FILE6 ] ; then
+      set -- $1 $FILE6 $3
+    else
+      set -- $1 $FILE7 $3
+    fi
+ fi
+
+  # File Numbers
+  if [ "$2" == "1" ] ; then
+    if [ "$3" == "" ] ; then
+      set -- $1 $FILE1 0x18000000
+    else
+      set -- $1 $FILE1 $3
+    fi
+  fi
+  if [ "$2" == "2" ] ; then
+    if [ "$3" == "" ] ; then
+      set -- $1 $FILE2 $DTB_ADDR
+    else
+      set -- $1 $FILE2 $3
+    fi
+  fi
+  if [ "$2" == "3" ] ; then
+    set -- $1 $FILE3 $3
+  fi
+  if [ "$2" == "4" ] ; then
+    set -- $1 $FILE3 $3
+  fi
+  if [ "$2" == "5" ] ; then
+    set -- $1 $FILE3 $3
+  fi
+  if [ "$2" == "6" ] ; then
+    set -- $1 $FILE3 $3
+  fi
+  if [ "$2" == "7" ] ; then
+    set -- $1 $FILE3 $3
   fi
 
   # File check
