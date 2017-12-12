@@ -502,16 +502,16 @@ Examples: (Download directory to QSPI Flash)
     set -- $1 $FILE3 $3
   fi
   if [ "$2" == "4" ] ; then
-    set -- $1 $FILE3 $3
+    set -- $1 $FILE4 $3
   fi
   if [ "$2" == "5" ] ; then
-    set -- $1 $FILE3 $3
+    set -- $1 $FILE5 $3
   fi
   if [ "$2" == "6" ] ; then
-    set -- $1 $FILE3 $3
+    set -- $1 $FILE6 $3
   fi
   if [ "$2" == "7" ] ; then
-    set -- $1 $FILE3 $3
+    set -- $1 $FILE7 $3
   fi
 
   # File check
