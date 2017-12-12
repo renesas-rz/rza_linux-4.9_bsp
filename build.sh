@@ -977,33 +977,16 @@ if [ "$1" == "buildroot" ]  || [ "$1" == "b" ] ; then
       patch -s -p1 -i $ROOTDIR/patches-buildroot/buildroot-$BR_VERSION/br_2017.02.0_to_2017.02.1.patch
     fi
 
-    CHECK=`grep " BR2_VERSION " Makefile`
-    if [ "$CHECK" == "export BR2_VERSION := 2017.02.1" ] ; then
-      banner_yellow "Updating Buildroot version from 2017.02.1 to 2017.02.2"
-      sleep 1
-      patch -s -p1 -i $ROOTDIR/patches-buildroot/buildroot-$BR_VERSION/br_2017.02.1_to_2017.02.2.patch
-    fi
-
-    CHECK=`grep " BR2_VERSION " Makefile`
-    if [ "$CHECK" == "export BR2_VERSION := 2017.02.2" ] ; then
-      banner_yellow "Updating Buildroot version from 2017.02.2 to 2017.02.3"
-      sleep 1
-      patch -s -p1 -i $ROOTDIR/patches-buildroot/buildroot-$BR_VERSION/br_2017.02.2_to_2017.02.3.patch
-    fi
-
-    CHECK=`grep " BR2_VERSION " Makefile`
-    if [ "$CHECK" == "export BR2_VERSION := 2017.02.3" ] ; then
-      banner_yellow "Updating Buildroot version from 2017.02.3 to 2017.02.4"
-      sleep 1
-      patch -s -p1 -i $ROOTDIR/patches-buildroot/buildroot-$BR_VERSION/br_2017.02.3_to_2017.02.4.patch
-    fi
-
-    CHECK=`grep " BR2_VERSION " Makefile`
-    if [ "$CHECK" == "export BR2_VERSION := 2017.02.4" ] ; then
-      banner_yellow "Updating Buildroot version from 2017.02.4 to 2017.02.5"
-      sleep 1
-      patch -s -p1 -i $ROOTDIR/patches-buildroot/buildroot-$BR_VERSION/br_2017.02.4_to_2017.02.5.patch
-    fi
+    for i in `seq 1 6` ;
+    do
+      ii=`expr $i + 1`
+      CHECK=`grep " BR2_VERSION " Makefile`
+      if [ "$CHECK" == "export BR2_VERSION := 2017.02.${i}" ] ; then
+        banner_yellow "Updating Buildroot version from 2017.02.${i} to 2017.02.${ii}"
+        sleep 1
+        patch -s -p1 -i $ROOTDIR/patches-buildroot/buildroot-$BR_VERSION/br_2017.02.${i}_to_2017.02.${ii}.patch
+      fi
+    done
 
     # Created by doing:
     #   git diff 2017.02   2017.02.1 > br_2017.02.0_to_2017.02.1.patch
@@ -1011,6 +994,8 @@ if [ "$1" == "buildroot" ]  || [ "$1" == "b" ] ; then
     #   git diff 2017.02.2 2017.02.3 > br_2017.02.2_to_2017.02.3.patch
     #   git diff 2017.02.3 2017.02.4 > br_2017.02.3_to_2017.02.4.patch
     #   git diff 2017.02.4 2017.02.5 > br_2017.02.4_to_2017.02.5.patch
+    #   git diff 2017.02.5 2017.02.6 > br_2017.02.5_to_2017.02.6.patch
+    #   git diff 2017.02.6 2017.02.7 > br_2017.02.6_to_2017.02.7.patch
   fi
 
   if [ ! -e output ] ; then
