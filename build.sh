@@ -390,9 +390,10 @@ FILE7=output/axfs/rootfs.axfs.bin
 
   if [ "$2" == "" ] ; then
     echo "
-usage: ./build.sh jlink {FILE} {ADDRESS}
+usage: ./build.sh jlink {FILE} {ADDRESS} {SPI}
      FILE: The path to the file to download.
-  ADDRESS: (Optional) RAM or SPI Flash. Default is $DLRAM_ADDR (beginning of your RAM)
+  ADDRESS: (Optional) RAM or SPI Flash address. Default is $DLRAM_ADDR (beginning of your RAM)
+      SPI: (Optional) 'single' or 'dual' SPI Flash. Default is 'single' SPI flash programming
 
 Examples: (full path)
   ./build.sh jlink output/u-boot-2017.05/u-boot.bin 0x18000000
@@ -453,65 +454,65 @@ Examples: (Download directory to QSPI Flash)
   # Change our passed arguments to full paths
   if [ "$2" == "uboot" ] || [ "$2" == "u-boot" ] ; then
     if [ "$3" == "" ] ; then
-      set -- $1 $FILE1 0x18000000
+      set -- $1 $FILE1 0x18000000 $4
     else
-      set -- $1 $FILE1 $3
+      set -- $1 $FILE1 $3 $4
     fi
   fi
   if [ "$2" == "dtb" ] ; then
     if [ "$3" == "" ] ; then
-      set -- $1 $FILE2 $DTB_ADDR
+      set -- $1 $FILE2 $DTB_ADDR $4
     else
-      set -- $1 $FILE2 $3
+      set -- $1 $FILE2 $3 $4
     fi
   fi
   if [ "$2" == "uImage" ] ; then
-    set -- $1 $FILE3 $3
+    set -- $1 $FILE3 $3 $4
   fi
   if [ "$2" == "xipImage" ] ; then
-    set -- $1 $FILE4 $3
+    set -- $1 $FILE4 $3 $4
   fi
   if [ "$2" == "rootfs_squashfs" ] ; then
-    set -- $1 $FILE5 $3
+    set -- $1 $FILE5 $3 $4
   fi
   if [ "$2" == "rootfs_axfs" ] ; then
     # Choose Buildroot as default
     if [ -e $FILE6 ] ; then
-      set -- $1 $FILE6 $3
+      set -- $1 $FILE6 $3 $4
     else
-      set -- $1 $FILE7 $3
+      set -- $1 $FILE7 $3 $4
     fi
  fi
 
   # File Numbers
   if [ "$2" == "1" ] ; then
     if [ "$3" == "" ] ; then
-      set -- $1 $FILE1 0x18000000
+      set -- $1 $FILE1 0x18000000 $4
     else
-      set -- $1 $FILE1 $3
+      set -- $1 $FILE1 $3 $4
     fi
   fi
   if [ "$2" == "2" ] ; then
     if [ "$3" == "" ] ; then
-      set -- $1 $FILE2 $DTB_ADDR
+      set -- $1 $FILE2 $DTB_ADDR $4
     else
-      set -- $1 $FILE2 $3
+      set -- $1 $FILE2 $3 $4
     fi
   fi
   if [ "$2" == "3" ] ; then
-    set -- $1 $FILE3 $3
+    set -- $1 $FILE3 $3 $4
   fi
   if [ "$2" == "4" ] ; then
-    set -- $1 $FILE4 $3
+    set -- $1 $FILE4 $3 $4
   fi
   if [ "$2" == "5" ] ; then
-    set -- $1 $FILE5 $3
+    set -- $1 $FILE5 $3 $4
   fi
   if [ "$2" == "6" ] ; then
-    set -- $1 $FILE6 $3
+    set -- $1 $FILE6 $3 $4
   fi
   if [ "$2" == "7" ] ; then
-    set -- $1 $FILE7 $3
+    set -- $1 $FILE7 $3 $4
   fi
 
   # File check
@@ -537,6 +538,16 @@ Examples: (Download directory to QSPI Flash)
     ramaddr=$DLRAM_ADDR
   fi
 
+  # check single or dual
+  if [ "$4" != "" ] ; then
+    if [ "$4" != "single" ] && [ "$4" != "dual" ] ; then
+      echo ""
+      banner_red "Argument 4 must be either 'single' or 'dual'"
+      echo ""
+      exit
+    fi
+  fi
+
   # Create a jlink script and execute it
   echo "loadbin $dlfile,$ramaddr" > /tmp/jlink_load.txt
   echo "g" >> /tmp/jlink_load.txt
@@ -559,13 +570,32 @@ Examples: (Download directory to QSPI Flash)
       JTAGCONF='-jtagconf -1,-1'
   fi
 
-  JLinkExe -speed 15000 -if JTAG $JTAGCONF -device R7S721001 -CommanderScript /tmp/jlink_load.txt
+  # clear our log
+  echo "" > /tmp/jlink.log
 
-#  if [ "$1" == "jlink" ] ; then
-#    JLinkExe -speed 15000 -if JTAG $JTAGCONF -device R7S721001 -CommanderScript /tmp/jlink_load.txt
-#  else
-#    JLinkExe -speed 15000 -if JTAG $JTAGCONF -device R7S721001_DualSPI -CommanderScript /tmp/jlink_load.txt
-#  fi
+  # keep a copy of the output in a log file to check if the operation was successful or not
+  if [ "$4" == "dual" ] ; then
+    JLinkExe -speed 15000 -if JTAG $JTAGCONF -device R7S721001_DualSPI -CommanderScript /tmp/jlink_load.txt | tee /tmp/jlink.log
+  else
+    JLinkExe -speed 15000 -if JTAG $JTAGCONF -device R7S721001 -CommanderScript /tmp/jlink_load.txt | tee /tmp/jlink.log
+  fi
+
+  # Check to see if download we successful
+  CHECK=`grep -m1 FAILED /tmp/jlink.log`
+  CHECK2=`grep -m1 " Error:" /tmp/jlink.log`
+  CHECK3=`grep -m1 "Cannot connect to target" /tmp/jlink.log`
+  if [ "$CHECK" != "" ] ; then
+    banner_red "$CHECK"
+    exit
+  fi
+  if [ "$CHECK2" != "" ] ; then
+    banner_red "$CHECK2"
+    exit
+  fi
+  if [ "$CHECK3" != "" ] ; then
+    banner_red "$CHECK3"
+    exit
+  fi
 
   echo "-----------------------------------------------------"
   echo -en "\tFile size was:\n\t"
@@ -574,7 +604,8 @@ Examples: (Download directory to QSPI Flash)
 
   FILESIZE=$(cat $dlfile | wc -c)
 
-  if [ ${ramaddr:0:4} == "0x18" ] ; then
+  CHECK=`grep "Comparing flash" /tmp/jlink.log`
+  if [ "$CHECK" != "" ] ; then
     exit
   fi
 
