@@ -1008,7 +1008,7 @@ if [ "$1" == "buildroot" ]  || [ "$1" == "b" ] ; then
       patch -s -p1 -i $ROOTDIR/patches-buildroot/buildroot-$BR_VERSION/br_2017.02.0_to_2017.02.1.patch
     fi
 
-    for i in `seq 1 6` ;
+    for i in `seq 1 8` ;
     do
       ii=`expr $i + 1`
       CHECK=`grep " BR2_VERSION " Makefile`
@@ -1027,6 +1027,8 @@ if [ "$1" == "buildroot" ]  || [ "$1" == "b" ] ; then
     #   git diff 2017.02.4 2017.02.5 > br_2017.02.4_to_2017.02.5.patch
     #   git diff 2017.02.5 2017.02.6 > br_2017.02.5_to_2017.02.6.patch
     #   git diff 2017.02.6 2017.02.7 > br_2017.02.6_to_2017.02.7.patch
+    #   git diff 2017.02.7 2017.02.8 > br_2017.02.7_to_2017.02.8.patch
+    #   git diff 2017.02.8 2017.02.9 > br_2017.02.8_to_2017.02.9.patch
   fi
 
   if [ ! -e output ] ; then
