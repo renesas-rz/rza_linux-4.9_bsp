@@ -1,0 +1,44 @@
+This testing was done on the RZ/A1H RSK board.
+
+
+The following kernel configurations are needed.
+	CONFIG_SOUND=y
+	CONFIG_SND=y
+	CONFIG_SND_SOC=y
+	CONFIG_SND_SCUX_RSKRZA1=y
+
+
+The following Buildroot packages were used for testing:
+	[*] alsa-utils
+	BR2_PACKAGE_ALSA_UTILS=y
+
+	[*] alsa-utils -> [*] aplay/arecord.
+	BR2_PACKAGE_ALSA_UTILS_APLAY=y
+
+	[*] alsactl
+	BR2_PACKAGE_ALSA_UTILS_ALSACTL
+
+	[*] alsa-utils -> [*] amixer
+	BR2_PACKAGE_ALSA_UTILS_AMIXER=y
+
+	[*] mpg123
+	BR2_PACKAGE_MPG123=y
+
+------------------
+Testing
+------------------
+* Playback
+	- To play WAV file:
+		$ cd sounds
+		$ aplay ring.wav
+	- To run mp3 file:
+		$ mpg123 Richard.mp3
+
+* Record
+	- Due to read-only filesystem, it is only possible to record to file at /tmp directory
+	- To record audio file:
+		$ arecord -f S16_LE -c1 -r44100 -d 50 /tmp/test-mic.wav
+	- Play recorded file:
+		$ cd /tmp
+		$ aplay test-mic.wav
+

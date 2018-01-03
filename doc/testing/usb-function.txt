@@ -1,5 +1,7 @@
 This uses the USB Ethernet gadget for testing.
-Therefor, make sure to set 
+Therefore, make sure to set 
+	CONFIG_USB_RENESAS_USBHS=y
+	CONFIG_USB_RENESAS_USBHS_UDC=y
 	CONFIG_USB_ETH=y
 	CONFIG_USB_ETH_RNDIS=y
 in your kernel config.
@@ -49,8 +51,11 @@ DEVICE:
 	$ ifconfig usb0 up
 	$ ifconfig usb0 192.168.0.69
 HOST: 
-	$ sudo ifconfig usb0 up
-	$ sudo ifconfig usb0 192.168.0.70
+	$ dmesg | grep usb0
+	[343772.995579] cdc_subset 1-1:1.1 ens35u1i1: renamed from usb0
+
+	$ sudo ifconfig ens35u1i1 up
+	$ sudo ifconfig ens35u1i1 192.168.0.70
 	$ ping 192.168.0.69
 	PING 192.168.0.69 (192.168.0.69) 56(84) bytes of data.
 	64 bytes from 192.168.0.69: icmp_req=2 ttl=64 time=3.74 ms

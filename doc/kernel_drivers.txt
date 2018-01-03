@@ -33,17 +33,13 @@ NOTE: If you want to read a USB flash drive, you will also need:
 
 USB Function
 ---------------------------------------------------
-CONFIG_USB_R8A66597
-> Device Drivers
-	> USB support
-		> USB Gadget Support
-			> USB Peripheral Controller
-				[*] Renesas R8A66597 USB Peripheral Controller
+CONFIG_USB_RENESAS_USBHS=y
+CONFIG_USB_RENESAS_USBHS_UDC=y
 
 
 DMA
 ---------------------------------------------------
-CONFIG_RZA1_DMAE
+CONFIG_RZA1_DMA
 > Device Drivers
 	> DMA Engine support
 		[*] Renesas RZA1 DMAC support
@@ -213,22 +209,14 @@ CONFIG_CAN_RZA1=y
 
 AUDIO
 ---------------------------------------------------
-CONFIG_SND_SCUX_RSKRZA1:
-> Device Drivers
-	> Sound card support
-		> Advanced Linux Sound Architecture
-			> ALSA for SoC audio support
-				> SoC Audio support for SuperH
-					[*] SCUX sound support on RSK-RZA1
+CONFIG_SOUND=y
+CONFIG_SND=y
+CONFIG_SND_SOC=y
+CONFIG_SND_SCUX_RSKRZA1=y
 
 NOTE: You also need to enable:
-	CONFIG_RZA1_DMAE
-	CONFIG_SND_MIXER_OSS
-	CONFIG_SND_PCM_OSS
-	CONFIG_SND_PCM_OSS_PLUGINS
-
+	CONFIG_RZA_DMA=y
       You do not need:
 	CONFIG_SND_SUPPORT_OLD_API
 	CONFIG_SND_DRIVERS
-
 
