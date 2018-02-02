@@ -1,5 +1,6 @@
 This uses the USB Ethernet gadget for testing.
-Therefore, make sure to set 
+Therefore, make sure to set
+	CONFIG_USB_GADGET=y
 	CONFIG_USB_RENESAS_USBHS=y
 	CONFIG_USB_RENESAS_USBHS_UDC=y
 	CONFIG_USB_ETH=y
@@ -7,11 +8,6 @@ Therefore, make sure to set
 in your kernel config.
 
 JP11 = Open
-
-bootargs: add "usbgs=0"  (selects gadget on USB0, host on USB1)
-
-
-$ g_ether gadget: high-speed config #1: CDC Ethernet (ECM)
 
 $ ifconfig -a
 eth0      Link encap:Ethernet  HWaddr 74:90:50:00:4E:36
