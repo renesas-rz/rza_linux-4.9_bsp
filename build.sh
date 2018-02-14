@@ -1031,6 +1031,21 @@ if [ "$1" == "buildroot" ]  || [ "$1" == "b" ] ; then
     #   git diff 2017.02.8 2017.02.9 > br_2017.02.8_to_2017.02.9.patch
   fi
 
+  # Apply Renesas Buildroot patches that have not been applied yet.
+  if [ ! -e .applied_renesas_patches ] ; then
+    echo "# These patches have already been applied" > .applied_renesas_patches
+  fi
+  # this ${i##*/} means just the file name, not the full path
+  for i in $ROOTDIR/patches-buildroot/buildroot-$BR_VERSION/00*.patch ; do
+    grep "${i##*/}" .applied_renesas_patches > /dev/null
+    if [ "$?" != "0" ] ; then
+      banner_yellow "Applying Buildroot patch ${i##*/}"
+      patch -p1 -i $i
+      echo "${i##*/}" >> .applied_renesas_patches
+      sleep 1
+    fi
+  done
+
   if [ ! -e output ] ; then
     mkdir -p output
   fi
@@ -1042,9 +1057,6 @@ if [ "$1" == "buildroot" ]  || [ "$1" == "b" ] ; then
 
  # Patch and Configure Buildroot for RZ/A
   if [ ! -e configs/rza1_defconfig ]; then
-
-    # Apply Renesas Buildroot patches (beging with renesas_)
-    for i in $ROOTDIR/patches-buildroot/buildroot-$BR_VERSION/renesas_*.patch; do patch -p1 < $i; done
 
     # Ask the user if they want to use the glib based Linaro toolchain
     # or build a uclib toolchain from scratch.
