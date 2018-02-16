@@ -24,7 +24,7 @@
 # Steps to add a new board:
 #
 # 1. Add the name of your board (lower case) to CUSTOM_BOARDS
-#    Separate each board with a space. For example: CUSTOM_BOARDS="rzdog rzcat rztoaster"
+#    Separate each board with a space. For example: CUSTOM_BOARDS = "rzdog rzcat rztoaster"
 #
 # 2. Copy the TEMPLATE below and replace "xxxx" on each line with your board name. Remember to
 #    remove the '#' from the beginning of each line.

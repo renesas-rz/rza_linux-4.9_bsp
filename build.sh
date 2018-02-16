@@ -8,6 +8,8 @@ function usage {
   echo -ne "\033[00m" # END TEXT COLOR
   echo -e "    ./build.sh config                  : Target Board Selection ($BOARD)"
   echo -e ""
+  echo -e "    ./build.sh board_clone             : Make a copy of a Renesas board BSP so you can hack at it"
+  echo -e ""
   echo -e "    ./build.sh buildroot               : Builds Root File System (and installs toolchain)"
   echo -e "    ./build.sh u-boot                  : Builds u-boot"
   echo -e "    ./build.sh kernel                  : Builds Linux kernel. Default is to build uImage"
@@ -314,6 +316,219 @@ WT_TEXT="whiptail --title \"Build Environment Setup\" --menu \
 
   done
 
+  exit
+fi
+
+###############################################################################
+# board_clone
+###############################################################################
+if [ "$1" == "board_clone" ] ; then
+
+  if [ "$2" == "" ] ; then
+    echo "If you start editing a the BSP file specifc to a board, this might cause"
+    echo "issues when you try to pull in updates (./build.sh update) if you have"
+    echo "modified the same line that was also changed in the repository. This"
+    echo "will result in a merge conflict. Therefore, it is better to make a copy"
+    echo "of the board files so that you can modify them however you want and never"
+    echo "cause a merge conflict when updating your source tree."
+    echo ""
+    echo "Enter the name of the Renesas board you want to clone, and then a name"
+    echo "to append on the end."
+    echo ""
+    echo "For example:"
+    echo "./build.sh board_clone rskrza1 hack"
+    echo ""
+    echo "This will create a custom build named \"rskrza1_hack\""
+    echo "It will be available for selection using ./build.sh config menu"
+    echo ""
+    source boards_renesas.txt
+    echo "Available Renesas board names to be used as the first parameter are:"
+    echo "    $RENESAS_BOARDS"
+    exit
+  fi
+
+  if [ "$3" == "" ] ; then
+    echo "ERROR: Missing parameter"
+    exit
+  fi
+
+  # Check Renesas board name
+  if [ ! -e output/linux-4.9/arch/arm/boot/dts/r7s72100-${2}.dts ] ; then
+    echo "ERROR: Board \"${2}\" does not exist"
+    exit
+  fi
+
+  # NEW_NAME
+  NEWNAME="${2}_${3}"
+
+  echo "Creating board \"${NEWNAME}\""
+
+  # Convert board name to upper case
+  boardname=$NEWNAME
+  boardnameupper=`echo ${boardname} | tr '[:lower:]' '[:upper:]'`
+  companyname=renesas
+
+  uppercase2=`echo ${2} | tr '[:lower:]' '[:upper:]'`
+
+  #
+  # u-boot
+  #
+
+  # Make a copy of the board files in u-boot
+  cp -a -v output/u-boot-2017.05/include/configs/${2}.h output/u-boot-2017.05/include/configs/${NEWNAME}.h
+  cp -a -v output/u-boot-2017.05/configs/${2}_defconfig output/u-boot-2017.05/configs/${NEWNAME}_defconfig
+  cp -a -v output/u-boot-2017.05/board/renesas/${2} output/u-boot-2017.05/board/renesas/${NEWNAME}
+
+  #rename board file
+  mv output/u-boot-2017.05/board/renesas/${NEWNAME}/${2}.c output/u-boot-2017.05/board/renesas/${NEWNAME}/${NEWNAME}.c
+
+  # use sed to change all instances of the board name to the new name
+  # rza1template >> $boardname
+  # companyname >> $companyname
+
+  cd output/u-boot-2017.05
+
+  #Kconfig:
+  sed -i "s/$2/$boardname/g"  board/${companyname}/${boardname}/Kconfig
+  sed -i "s/$uppercase2/$boardnameupper/g"  board/${companyname}/${boardname}/Kconfig
+
+  #Makefile
+  sed -i "s/$2/$boardname/g"  board/${companyname}/${boardname}/Makefile
+
+  #rza1template.c
+  #sed -i "s/$2/$boardname/g"  board/${companyname}/${boardname}/${boardname}.c
+
+  #rza1template_defconfig
+  sed -i "s/$uppercase2/$boardnameupper/g"  configs/${boardname}_defconfig
+
+  #rza1template.h
+  sed -i "s/$uppercase2/$boardnameupper/g"  include/configs/${boardname}.h
+
+  ALREADY_ADDED=`grep "config TARGET_$boardnameupper" arch/arm/mach-rmobile/Kconfig.rza1`
+  if [ "$ALREADY_ADDED" == "" ] ; then
+
+    #arch/arm/mach-rmobile/Kconfig.rza1
+    # (TAG_TARGET)
+    #config TARGET_$boardnameupper
+    #	bool "$boardname board"
+    #	select BOARD_LATE_INIT
+    sed -i "s/(TAG_TARGET)/(TAG_TARGET)\nconfig TARGET_$boardnameupper\n\tbool \"$boardname board\"\n\tselect BOARD_LATE_INIT\n/g"  arch/arm/mach-rmobile/Kconfig.rza1
+
+    #arch/arm/mach-rmobile/Kconfig.rza1
+    # (TAG_KCONFIG)
+    #source "board/$companyname/$boardname/Kconfig"
+    sed -i "s:(TAG_KCONFIG):(TAG_KCONFIG)\nsource \"board/$companyname/$boardname/Kconfig\":g"  arch/arm/mach-rmobile/Kconfig.rza1
+  fi
+
+  cd ../..
+
+  # Make a copy of the board files in kernel
+  cp -a -v output/linux-4.9/arch/arm/boot/dts/r7s72100-${2}.dts output/linux-4.9/arch/arm/boot/dts/r7s72100-${NEWNAME}.dts
+  cp -a -v output/linux-4.9/arch/arm/mach-shmobile/board-${2}.c output/linux-4.9/arch/arm/mach-shmobile/board-${NEWNAME}.c
+  cp -a -v output/linux-4.9/arch/arm/configs/${2}_defconfig output/linux-4.9/arch/arm/configs/${NEWNAME}_defconfig
+  cp -a -v output/linux-4.9/arch/arm/configs/${2}_xip_defconfig output/linux-4.9/arch/arm/configs/${NEWNAME}_xip_defconfig
+
+  #
+  # kernel
+  #
+
+  cd output/linux-4.9
+
+  # use sed to change all instances of the board name to the new name
+  # rza1template >> ${boardname}
+  # RZA1TEMPLATE >> ${boardnameupper}
+  # companyname >> ${companyname}
+
+  # arch/arm/configs/xxxx_defconfig
+  sed -i "s/$uppercase2/${boardnameupper}/g"  arch/arm/configs/${boardname}_defconfig
+
+  # arch/arm/configs/xxxx_xip_defconfig
+  sed -i "s/$uppercase2/${boardnameupper}/g"  arch/arm/configs/${boardname}_xip_defconfig
+
+  # arch/arm/boot/dts/r7s72100-xxxx.dts
+  sed -i "s/$2/${boardname}/g"  arch/arm/boot/dts/r7s72100-${boardname}.dts
+  sed -i "s/$uppercase2/${boardnameupper}/g"  arch/arm/boot/dts/r7s72100-${boardname}.dts
+  #sed -i "s/mycompany/${companyname}/g"  arch/arm/boot/dts/r7s72100-${boardname}.dts
+
+  # arch/arm/mach-shmobile/board-xxxx.c
+  sed -i "s/$2/${boardname}/g"  arch/arm/mach-shmobile/board-${boardname}.c
+  sed -i "s/$uppercase2/${boardnameupper}/g"  arch/arm/mach-shmobile/board-${boardname}.c
+  #sed -i "s/mycompany/${companyname}/g"  arch/arm/mach-shmobile/board-${boardname}.c
+
+
+  # NOTE: When finding the line to insert our new board after, notice the extra
+  #       '-' which makes the text search only return that line
+  LINE=---------------------------------------------
+
+  # arch/arm/boot/dts/Makefile
+  ALREADY_ADDED=`grep r7s72100-${boardname}.dtb arch/arm/boot/dts/Makefile`
+  if [ "$ALREADY_ADDED" == "" ] ; then
+    sed -i "s/${LINE}/${LINE}\ndtb-y += r7s72100-${boardname}.dtb/g" arch/arm/boot/dts/Makefile
+  fi
+
+  # arch/arm/mach-shmobile/Makefile
+  ALREADY_ADDED=`grep CONFIG_MACH_${boardnameupper} arch/arm/mach-shmobile/Makefile`
+  if [ "$ALREADY_ADDED" == "" ] ; then
+    sed -i "s/${LINE}/${LINE}\nobj-\$(CONFIG_MACH_${boardnameupper})	+= board-${boardname}.o/g"  arch/arm/mach-shmobile/Makefile
+  fi
+
+  # arch/arm/mach-shmobile/Kconfig
+  ALREADY_ADDED=`grep MACH_${boardnameupper} arch/arm/mach-shmobile/Kconfig`
+  if [ "$ALREADY_ADDED" == "" ] ; then
+    sed -i "s/${LINE}/${LINE}\nconfig MACH_${boardnameupper}\n\tbool \"${boardnameupper} board\"\n/g"  arch/arm/mach-shmobile/Kconfig
+  fi
+
+  cd ../..
+
+  #
+  # add to boards_custom.txt
+  #
+
+  source boards_renesas.txt
+  source boards_custom.txt
+
+  NEW_BOARD_NAMES="$CUSTOM_BOARDS $NEWNAME"
+
+  sed -i 's:CUSTOM_BOARDS=.*:CUSTOM_BOARDS="'"$NEW_BOARD_NAMES"'":g' boards_custom.txt
+
+  BOARD=${NEWNAME}
+
+  BRD_DLRAM_xxxx=BRD_DLRAM_${2}
+  eval DLRAM_ADDR=$(eval echo \${$BRD_DLRAM_xxxx})
+
+  BRD_UBOOT_xxxx=BRD_UBOOT_${2}
+  eval UBOOT_ADDR=$(eval echo \${$BRD_UBOOT_xxxx})
+
+  BRD_DTB_xxxx=BRD_DTB_${2}
+  eval DTB_ADDR=$(eval echo \${$BRD_DTB_xxxx})
+
+  BRD_KERNEL_xxxx=BRD_KERNEL_${2}
+  eval KERNEL_ADDR=$(eval echo \${$BRD_KERNEL_xxxx})
+
+  BRD_ROOTFS_xxxx=BRD_ROOTFS_${2}
+  eval ROOTFS_ADDR=$(eval echo \${$BRD_ROOTFS_xxxx})
+
+  BRD_QSPI_xxxx=BRD_QSPI_${2}
+  eval QSPI=$(eval echo \${$BRD_QSPI_xxxx})
+
+  echo "" >> boards_custom.txt
+  echo "# ${NEWNAME}" >> boards_custom.txt
+
+  echo "   BRD_DESC_${NEWNAME}=\"Copy of $2\"" >> boards_custom.txt
+  echo "  BRD_DLRAM_${NEWNAME}=$DLRAM_ADDR"  >> boards_custom.txt
+  echo "  BRD_UBOOT_${NEWNAME}=$UBOOT_ADDR"  >> boards_custom.txt
+  echo "    BRD_DTB_${NEWNAME}=$DTB_ADDR"    >> boards_custom.txt
+  echo " BRD_KERNEL_${NEWNAME}=$KERNEL_ADDR" >> boards_custom.txt
+  echo " BRD_ROOTFS_${NEWNAME}=$ROOTFS_ADDR" >> boards_custom.txt
+  echo "   BRD_QSPI_${NEWNAME}=$QSPI"        >> boards_custom.txt
+  echo "" >> boards_custom.txt
+  echo "" >> boards_custom.txt
+
+  echo ""
+  echo ""
+  echo "Now run \"./build.sh config\" and select your board from the menu."
+  echo "Remember to select \"Save\" before exiting."
+  echo ""
   exit
 fi
 
