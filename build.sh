@@ -13,7 +13,7 @@ function usage {
   echo -e "    ./build.sh buildroot               : Builds Root File System (and installs toolchain)"
   echo -e "    ./build.sh u-boot                  : Builds u-boot"
   echo -e "    ./build.sh kernel                  : Builds Linux kernel. Default is to build uImage"
-  echo -e "    ./build.sh axfs                    : Builds an AXFS image from the last Buildroot output"
+  echo -e "    ./build.sh axfs                    : Builds an AXFS image"
   echo -e ""
   echo -e "    ./build.sh env                     : Set up the Build environment so you can run 'make' directly"
   echo -e ""
@@ -1428,32 +1428,17 @@ if [ "$1" == "axfs" ] ; then
     exit
   fi
 
-  cd $OUTDIR
-
-  if [ ! -e axfs/mkfs.axfs ] ; then
-    mkdir -p axfs
-    cd axfs
-    #  Build mkfs.axfs from source
-    #  cp -a ../../axfs/mkfs.axfs-legacy/mkfs.axfs.c .
-    #  cp -a ../../axfs/mkfs.axfs-legacy/linux .
-    #  cp -a ../../axfs/mkfs.axfs-legacy/Makefile .
-    #  make
-
-    # Just copy the pre-build version
-    CHECK=$(uname -m)
-    if [ "$CHECK" == "x86_64" ] ; then
-      # 64-bit OS
-      cp -a ../../axfs/mkfs.axfs-legacy/mkfs.axfs.64 mkfs.axfs
-    else
-      # 32-bit OS
-      cp -a ../../axfs/mkfs.axfs-legacy/mkfs.axfs.32 mkfs.axfs
-    fi
-
-    cd ..
+  # Just use the pre-build versions
+  CHECK=$(uname -m)
+  if [ "$CHECK" == "x86_64" ] ; then
+    # 64-bit OS
+    MKFSAXFS=$ROOTDIR/axfs/mkfs.axfs.64
+  else
+    # 32-bit OS
+    MKFSAXFS=$ROOTDIR/axfs/mkfs.axfs.32
   fi
 
-
-  cd axfs
+  cd $OUTDIR/axfs
 
   if [ "$2" != "" ] ; then
     if [ "$3" == "" ] ; then
@@ -1462,7 +1447,7 @@ if [ "$1" == "axfs" ] ; then
     echo "Usage: ./build.sh axfs {full-path-to-directory} {output-filename}"
     exit
    fi
-    ./mkfs.axfs -s -a $2 $3
+    $MKFSAXFS -s -a $2 $3
 
     if [ -e $3 ] ; then
       banner_green "axfs Build Successful"
@@ -1479,8 +1464,7 @@ if [ "$1" == "axfs" ] ; then
   #   a "Permission denied" message after the file system is mounted"
   chmod a-s $BUILDROOT_DIR/output/target/bin/busybox
 
-  #./mkfs.axfs -s -a $BUILDROOT_DIR/output/target rootfs.axfs.bin
-  ./mkfs.axfs -s -a ../buildroot-$BR_VERSION/output/target rootfs.axfs.bin
+  $MKFSAXFS -s -a ../buildroot-$BR_VERSION/output/target rootfs.axfs.bin
 
   if [ ! -e rootfs.axfs.bin ] ; then
     # did not build, so exit

@@ -1,5 +1,4 @@
-This is just the "mkfs.axfs-legacy" directory from this repository:
+Built from repository:   https://@github.com/jaredeh/axfs.git
 
-	https://code.google.com/p/axfs/
-
+Commit: 9a6762ffb488 ("kernel: add support for 4.14 kernel")
 
