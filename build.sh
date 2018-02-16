@@ -123,68 +123,26 @@ BUILD_THREADS=$(expr $NPROC + $NPROC)
 ###############################################################################
 if [ "$1" == "config" ] ; then
 
-BRD_NAMES[0]=rskrza1 ; BRD_DESC[0]="RSK (RZ/A1H)"
-  BRD_DLRAM[0]=0x08000000
-  BRD_UBOOT[0]=0x18000000
-    BRD_DTB[0]=0x180C0000
- BRD_KERNEL[0]=0x18200000
- BRD_ROOTFS[0]=0x18800000
-   BRD_QSPI[0]=DUAL
+  # read in our list of boards
+  source boards_renesas.txt
+  source boards_custom.txt
 
-BRD_NAMES[1]=genmai ; BRD_DESC[1]="GENMAI (RZA1H)"
-  BRD_DLRAM[1]=0x08000000
-  BRD_UBOOT[1]=0x18000000
-    BRD_DTB[1]=0x180C0000
- BRD_KERNEL[1]=0x18200000
- BRD_ROOTFS[1]=0x18800000
-   BRD_QSPI[1]=DUAL
+  # make a list of all boards
+  ALL_BOARDS="$RENESAS_BOARDS $CUSTOM_BOARDS"
 
-BRD_NAMES[2]=streamit ; BRD_DESC[2]="Stream it! (RZ/A1LU)"
-  BRD_DLRAM[2]=0x0C000000
-  BRD_UBOOT[2]=0x18000000
-    BRD_DTB[2]=0x180C0000
- BRD_KERNEL[2]=0x18200000
- BRD_ROOTFS[2]=0x18800000
-   BRD_QSPI[2]=SINGLE
-
-BRD_NAMES[3]=grpeach ; BRD_DESC[3]="GR-PEACH (RZ/A1H)"
-  BRD_DLRAM[3]=0x20000000
-  BRD_UBOOT[3]=0x18000000
-    BRD_DTB[3]=0x180C0000
- BRD_KERNEL[3]=0x18100000
- BRD_ROOTFS[3]=0x18600000
-   BRD_QSPI[3]=SINGLE
-
-BRD_NAMES[4]=ylcdrza1h ; BRD_DESC[4]="YLCDRZA1H (RZ/A1H)"
-  BRD_DLRAM[4]=0x08000000
-  BRD_UBOOT[4]=0x18000000
-    BRD_DTB[4]=0x180C0000
- BRD_KERNEL[4]=0x18200000
- BRD_ROOTFS[4]=0x18800000
-   BRD_QSPI[4]=DUAL
-
-BRD_NAMES[5]=? ; BRD_DESC[5]="Custom Board"
-  BRD_DLRAM[5]=0x20000000
-  BRD_UBOOT[5]=0x18000000
-    BRD_DTB[5]=0x180C0000
- BRD_KERNEL[5]=0x18200000
- BRD_ROOTFS[5]=0x18800000
-   BRD_QSPI[5]=SINGLE
-
-# save the current board so can know the user selected a new one
-ORIGINAL_BOARD=$BOARD
-
-BRD_CNT=$(echo ${#BRD_NAMES[@]})
-BRD_CNT_MAX_INDEX=$(expr $BRD_CNT - 1)
+  # save the current board so can know the user selected a new one
+  ORIGINAL_BOARD=$BOARD
 
   while [ "1" == "1" ]
   do
 
-    CURRENT_DESC="custom"
+    CURRENT_DESC="error"
 
-    for i in `seq 0 $BRD_CNT_MAX_INDEX` ; do
-      if [ "$BOARD" == "${BRD_NAMES[$i]}" ] ; then
-        CURRENT_DESC="${BRD_DESC[$i]}"
+    # What is the current selected board?
+    for i in `echo $ALL_BOARDS` ; do
+      if [ "$BOARD" == "$i" ] ; then
+        BRD_DESC_xxxx=BRD_DESC_${i}
+        CURRENT_DESC=$(eval echo \${$BRD_DESC_xxxx})
         break
       fi
     done
@@ -208,52 +166,55 @@ BRD_CNT_MAX_INDEX=$(expr $BRD_CNT - 1)
 
     if [ "$(grep "Target Board" /tmp/answer.txt)" != "" ] ; then
 
-    whiptail --title "Build Environment Setup" --menu \
-"Please select the platform you want to build for.\n"\
-"If you have your own custom board, choose the last\n"\
-"entry and enter the string name that you used for when\n"\
-"creating your BSP.\n"\
-"For example, if you enter \"rztoaster\", we will assume:\n"\
-" * rztoaster_defconfig (for u-boot and kernel)\n"\
-" * rztoaster_xip_defconfig (for XIP kernel)\n"\
-" * r7s72100-rztoaster.dts (for Device Tree)\n"\
- 0 0 40 \
-	"1. ${BRD_NAMES[0]}" ":${BRD_DESC[0]}" \
-	"2. ${BRD_NAMES[1]}" ":${BRD_DESC[1]}" \
-	"3. ${BRD_NAMES[2]}" ":${BRD_DESC[2]}" \
-	"4. ${BRD_NAMES[3]}" ":${BRD_DESC[3]}" \
-	"5. ${BRD_NAMES[4]}" ":${BRD_DESC[4]}" \
-	"6. ${BRD_NAMES[5]}" ": Define your own board..." \
- 2> /tmp/answer.txt
-    ans=$(cat /tmp/answer.txt)
+WT_TEXT="whiptail --title \"Build Environment Setup\" --menu \
+\"Please select the board you want to build for.\n\"\
+\"If you have your own custom board, please manually edit\n\"\
+\"file [boards_custom.txt] and then your board will show up\n\"\
+\"in this menu.\n\"\
+ 0 0 40 "
+
+    # add boards to menu
+    for i in `echo $ALL_BOARDS` ; do
+      BRD_DESC_xxxx=BRD_DESC_${i}
+      CURRENT_DESC=$(eval echo \${$BRD_DESC_xxxx})
+      WT_TEXT="$WT_TEXT \"$i\" \"$CURRENT_DESC\" "
+    done
+
+  eval $WT_TEXT 2> /tmp/answer.txt
+  ans=$(cat /tmp/answer.txt)
 
     # No selection (cancel)
     if [ "$ans" == "" ] ; then
       continue
     fi
 
-    CUR_INDEX=$(head -c 1 /tmp/answer.txt)
-    CUR_INDEX=$(expr $CUR_INDEX - 1)
 
-    if [ "$CUR_INDEX" == "5" ] ; then
-      whiptail --title "Custom board name selection" --inputbox "Enter your board name:" 0 0 \
-      2> /tmp/answer.txt
-      # No selection (cancel)
-      if [ "$ans" == "" ] ; then
-        continue
-      fi
-      BRD_NAMES[5]=$(cat /tmp/answer.txt)
+    BOARD=${ans}
+    #echo "BOARD = $BOARD"
 
-      whiptail --title "Custom board selected" --msgbox "In the main menu, please adjust settings as needed" 0 0
-    fi
+    BRD_DLRAM_xxxx=BRD_DLRAM_${ans}
+    eval DLRAM_ADDR=$(eval echo \${$BRD_DLRAM_xxxx})
+    #echo "DLRAM_ADDR = $DLRAM_ADDR"
 
-    BOARD=${BRD_NAMES[$CUR_INDEX]}
-    DLRAM_ADDR=${BRD_DLRAM[$CUR_INDEX]}
-    UBOOT_ADDR=${BRD_UBOOT[$CUR_INDEX]}
-    DTB_ADDR=${BRD_DTB[$CUR_INDEX]}
-    KERNEL_ADDR=${BRD_KERNEL[$CUR_INDEX]}
-    ROOTFS_ADDR=${BRD_ROOTFS[$CUR_INDEX]}
-    QSPI=${BRD_QSPI[$CUR_INDEX]}
+    BRD_UBOOT_xxxx=BRD_UBOOT_${ans}
+    eval UBOOT_ADDR=$(eval echo \${$BRD_UBOOT_xxxx})
+    #echo "UBOOT_ADDR = $UBOOT_ADDR"
+
+    BRD_DTB_xxxx=BRD_DTB_${ans}
+    eval DTB_ADDR=$(eval echo \${$BRD_DTB_xxxx})
+    #echo "DTB_ADDR = $DTB_ADDR"
+
+    BRD_KERNEL_xxxx=BRD_KERNEL_${ans}
+    eval KERNEL_ADDR=$(eval echo \${$BRD_KERNEL_xxxx})
+    #echo "KERNEL_ADDR = $KERNEL_ADDR"
+
+    BRD_ROOTFS_xxxx=BRD_ROOTFS_${ans}
+    eval ROOTFS_ADDR=$(eval echo \${$BRD_ROOTFS_xxxx})
+    #echo "ROOTFS_ADDR = $ROOTFS_ADDR"
+
+    BRD_QSPI_xxxx=BRD_QSPI_${ans}
+    eval QSPI=$(eval echo \${$BRD_QSPI_xxxx})
+    #echo "QSPI = $QSPI"
 
     continue
   fi
@@ -340,8 +301,12 @@ BRD_CNT_MAX_INDEX=$(expr $BRD_CNT - 1)
     # If our board selection has changed, then delete the .config files
     # for u-boot and kernel which will force a new defconfig
     if [ "$ORIGINAL_BOARD" != "$BOARD" ] ; then
-      rm $OUTDIR/u-boot-2017.05/.config
-      rm $OUTDIR/linux-4.9/.config
+      if [ -e $OUTDIR/u-boot-2017.05/.config ] ; then
+        rm $OUTDIR/u-boot-2017.05/.config
+      fi
+      if [ -e $OUTDIR/linux-4.9/.config ] ; then
+        rm $OUTDIR/linux-4.9/.config
+      fi
     fi
 
     break;
