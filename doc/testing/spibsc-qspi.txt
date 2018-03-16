@@ -131,12 +131,12 @@ Step 3: Program JFFS image into single QSPI
 
 Step 4: Kernel Boot
 	# Download uImage (0x09000000) and DTBS (0x09800000) to SDRAM
-	(rskrza1_bsp)$ ./build.sh jlink output/linux-3.14/arch/arm/boot/uImage 0x09000000
-	(rskrza1_bsp)$ ./build.sh jlink output/linux-3.14/arch/arm/boot/dts/r7s72100-rskrza1.dtb 0x09800000
+	(rskrza1_bsp)$ ./build.sh jlink output/linux-4.9/arch/arm/boot/uImage 0x09000000
+	(rskrza1_bsp)$ ./build.sh jlink output/linux-4.9/arch/arm/boot/dts/r7s72100-rskrza1_testing.dtb 0x09800000
 
 	# Kernel Boot:
 	=> setenv j1 'bootm start 0x09000000 - 0x09800000 ; bootm loados'
-	=> setenv jbootargs 'console=ttySC2,115200 ignoreloglevel console=tty0 root=/dev/mtdblock9 rw rootfstype=jffs2'
+	=> setenv jbootargs 'ignoreloglevel root=/dev/mtdblock9 rw rootfstype=jffs2'
 	=> setenv jboot 'run j1; setenv bootargs ${jbootargs}; fdt chosen; bootm go'
 	=> save
 	=> run jboot
@@ -149,16 +149,16 @@ Step 5: Programming kernel into single QSPI
 	# Instead of downloading the kernel to RAM usign JLINK, you can use these
 	  steps to program the kernel and DTBS into single QSPI Flash.
 
-	(rskrza1_bsp)$ ./build.sh jlink output/linux-3.14/arch/arm/boot/dts/r7s72100-rskrza1.dtb 0x09800000
+	(rskrza1_bsp)$ ./build.sh jlink output/linux-4.9/arch/arm/boot/dts/r7s72100-rskrza1.dtb 0x09800000
 	(uboot) => sf probe 0 ; sf erase C0000 40000 ; sf write 0x09800000 C0000 40000
 
-	(rskrza1_bsp)$ ./build.sh jlink output/linux-3.14/arch/arm/boot/uImage 0x09000000
+	(rskrza1_bsp)$ ./build.sh jlink output/linux-4.9/arch/arm/boot/uImage 0x09000000
 	(uboot) => sf probe 0 ; sf erase 100000 500000 ; sf write 0x09000000 100000 500000
 
 	# Now, to boot the kernel:
 	=> setenv j1 'sf probe 0 ; sf read 0x09800000 C0000 40000 ; sf read 0x09000000 100000 500000'
 	=> setenv j2 'bootm start 0x09000000 - 0x09800000 ; bootm loados'
-	=> setenv jbootargs 'console=ttySC2,115200 ignoreloglevel console=tty0 root=/dev/mtdblock9 rw rootfstype=jffs2'
+	=> setenv jbootargs 'ignoreloglevel root=/dev/mtdblock9 rw rootfstype=jffs2'
 	=> setenv jboot 'run j1 j2; setenv bootargs ${jbootargs}; fdt chosen; bootm go'
 	=> save
 	=> run jboot

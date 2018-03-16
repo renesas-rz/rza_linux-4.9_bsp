@@ -77,3 +77,14 @@ Testing
 		$ cd /tmp
 		$ aplay test-mic.wav
 
+
+
+When changing the resistors use to the MIC input instead of LINE IN
+
+# Audio Input Control Registers 'MICL Gain'(0x15) and 'MICL Gain'(0x16)
+# Left/Right Microphone Preamplifier Enable
+# PAENL: Set from 0x0 (Microphones disabled) -> 0x4 (20dB)
+# PAENR: Set from 0x0 (Microphones disabled) -> 0x4 (20dB)
+i2cset -f -y 3 0x10 0x15 0x40
+i2cset -f -y 3 0x10 0x16 0x40
+
