@@ -566,7 +566,8 @@ FILE3=output/linux-4.9/arch/arm/boot/uImage
 FILE4=output/linux-4.9/arch/arm/boot/xipImage
 FILE5=output/buildroot-$BR_VERSION/output/images/rootfs.squashfs
 FILE6=output/buildroot-$BR_VERSION/output/images/rootfs.axfs
-FILE7=output/axfs/rootfs.axfs.bin
+FILE7=output/buildroot-$BR_VERSION/output/images/cramfs.axfs
+FILE8=output/axfs/rootfs.axfs.bin
 
   if [ "$2" == "" ] ; then
     echo "
@@ -607,6 +608,8 @@ Examples: (file number)
     if [ -e $FILE6 ] ; then  echo "    6 = $FILE6"
     fi
     if [ -e $FILE7 ] ; then  echo "    7 = $FILE7"
+    fi
+    if [ -e $FILE8 ] ; then  echo "    7 = $FILE8"
     fi
 
   echo "
@@ -655,6 +658,9 @@ Examples: (Download directory to QSPI Flash)
   if [ "$2" == "rootfs_squashfs" ] ; then
     set -- $1 $FILE5 $3 $4
   fi
+  if [ "$2" == "rootfs_cramfs" ] ; then
+    set -- $1 $FILE7 $3 $4
+  fi
   if [ "$2" == "rootfs_axfs" ] ; then
     # Choose Buildroot as default
     if [ -e $FILE6 ] ; then
@@ -693,6 +699,9 @@ Examples: (Download directory to QSPI Flash)
   fi
   if [ "$2" == "7" ] ; then
     set -- $1 $FILE7 $3 $4
+  fi
+  if [ "$2" == "8" ] ; then
+    set -- $1 $FILE8 $3 $4
   fi
 
   # File check
