@@ -46,6 +46,39 @@ function banner_green {
   echo -ne "\033[00m"
 }
 
+##### Check for required Host packages #####
+MISSING_A_PACKAGE=0
+PACAKGE_LIST=(git make gcc g++ python)
+
+for i in 0 1 2 3 4; do
+  CHECK=$(which ${PACAKGE_LIST[$i]})
+  if [ "$CHECK" == "" ] ; then
+    MISSING_A_PACKAGE=1
+  fi
+done
+CHECK=$(dpkg -l 'libncurses5-dev' | grep '^ii')
+if [ "$CHECK" == "" ] ; then
+  MISSING_A_PACKAGE=1
+fi
+
+if [ "$MISSING_A_PACKAGE" != "0" ] ; then
+
+  banner_red "Missing mandatory host packages"
+  echo "Please make sure the following packages are installed on your machine."
+  echo "    git"
+  echo "    make"
+  echo "    gcc"
+  echo "    g++"
+  echo "    libncurses5-dev libncursesw5-dev"
+  echo "    python"
+  echo ""
+  echo "The following command line will ensure all packages are installed."
+  echo ""
+  echo "   sudo apt-get install git make gcc g++ libncurses5-dev libncursesw5-dev python"
+  echo ""
+  exit
+fi
+
 ##### Check if toolchain is installed correctly #####
 function check_for_toolchain {
   CHECK=$(which ${CROSS_COMPILE}gcc)
