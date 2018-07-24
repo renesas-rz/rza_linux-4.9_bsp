@@ -20,15 +20,16 @@ if [ "$CHECK" != "" ] ; then
 fi
 
 # unbind displaying console messages on the LCD (and blinking cursor)
-if [ -e /sys/class/vtconsole/vtcon1/bind ]; then
+if [ -e /sys/class/vtconsole/vtcon1/bind ] ; then
   echo 0 > /sys/class/vtconsole/vtcon1/bind
   echo 0 > /sys/class/graphics/fbcon/cursor_blink
 fi
 
 # put splash image on LCD
 if [ -e /sys/devices/platform/fcff7400.display/graphics/fb0/bits_per_pixel ] ; then
-    # only if the file exists
-    if [ -e /root/images/renesas_logo-800x480.jpg ]; then
+    # only if the file and fbv exists
+    CHECK=`which fbv`
+    if [ -e /root/images/renesas_logo-800x480.jpg ] && [ "$CHECK" != "" ] ; then
       fbv -s 1 -c -f /root/images/renesas_logo-800x480.jpg
     fi
 fi
@@ -44,7 +45,10 @@ QUIET='-q'
 
 # Set up ALSA sound paramters
 #  'alsactl restore' pulls from /var/lib/alsa/asound.state
-alsactl restore
+CHECK=`which alsactl`
+if [ "$CHECK" != "" ] ; then
+  alsactl restore
+fi
 #amixer $QUIET cset name="SSI0 Control" 1
 
 # Set LINE out volume (Left% , Right%)
