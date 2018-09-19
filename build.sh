@@ -76,7 +76,7 @@ if [ "$MISSING_A_PACKAGE" != "0" ] ; then
   echo ""
   echo "   sudo apt-get install git make gcc g++ libncurses5-dev libncursesw5-dev python"
   echo ""
-  exit
+  exit 1
 fi
 
 ##### Check if toolchain is installed correctly #####
@@ -90,7 +90,7 @@ function check_for_toolchain {
     banner_red "Toolchain not installed yet."
     echo -e "Buildroot will download and install the toolchain."
     echo -e "Plesae run \"./build.sh buildroot\" first and select the toolchain you would like to use."
-    exit
+    exit 1
   fi
 }
 
@@ -136,7 +136,7 @@ fi
 # Check command line
 if [ "$1" == "" ] ; then
   usage
-  exit
+  exit 0
 fi
 
 # Run build environment setup
@@ -349,7 +349,7 @@ WT_TEXT="whiptail --title \"Build Environment Setup\" --menu \
 
   done
 
-  exit
+  exit 0
 fi
 
 ###############################################################################
@@ -377,18 +377,18 @@ if [ "$1" == "board_clone" ] ; then
     source boards_renesas.txt
     echo "Available Renesas board names to be used as the first parameter are:"
     echo "    $RENESAS_BOARDS"
-    exit
+    exit 0
   fi
 
   if [ "$3" == "" ] ; then
     echo "ERROR: Missing parameter"
-    exit
+    exit 128
   fi
 
   # Check Renesas board name
   if [ ! -e output/linux-4.9/arch/arm/boot/dts/r7s72100-${2}.dts ] ; then
     echo "ERROR: Board \"${2}\" does not exist"
-    exit
+    exit 128
   fi
 
   # NEW_NAME
@@ -562,7 +562,7 @@ if [ "$1" == "board_clone" ] ; then
   echo "Now run \"./build.sh config\" and select your board from the menu."
   echo "Remember to select \"Save\" before exiting."
   echo ""
-  exit
+  exit 0
 fi
 
 ###############################################################################
@@ -577,7 +577,7 @@ if [ "$1" == "env" ] ; then
   echo 'export ROOTDIR=$(pwd) ; source ./setup_env.sh'
   echo ""
   echo "Then, you can execute 'make' directly in u-boot, linux, buildroot, etc..."
-  exit
+  exit 0
 fi
 
 ###############################################################################
@@ -663,7 +663,7 @@ Examples: (Download directory to QSPI Flash)
     echo -ne "\033[00m" # END TEXT COLOR
     echo -e "Your board should be up and running in u-boot first\n     (ie, not Linux) before executing this command."
 
-    exit
+    exit 0
  fi
 
   # Shortcuts
@@ -740,7 +740,7 @@ Examples: (Download directory to QSPI Flash)
   # File check
   if [ ! -e "$2" ] ; then
     echo "ERROR: File does not exist. $2"
-    exit
+    exit 128
   fi
 
   filename=$(basename "$2")
@@ -766,7 +766,7 @@ Examples: (Download directory to QSPI Flash)
       echo ""
       banner_red "Argument 4 must be either 'single' or 'dual'"
       echo ""
-      exit
+      exit 128
     fi
   fi
 
@@ -808,15 +808,15 @@ Examples: (Download directory to QSPI Flash)
   CHECK3=`grep -m1 "Cannot connect to target" /tmp/jlink.log`
   if [ "$CHECK" != "" ] ; then
     banner_red "$CHECK"
-    exit
+    exit 128
   fi
   if [ "$CHECK2" != "" ] ; then
     banner_red "$CHECK2"
-    exit
+    exit 128
   fi
   if [ "$CHECK3" != "" ] ; then
     banner_red "$CHECK3"
-    exit
+    exit 128
   fi
 
   echo "-----------------------------------------------------"
@@ -828,7 +828,7 @@ Examples: (Download directory to QSPI Flash)
 
   CHECK=`grep "Comparing flash" /tmp/jlink.log`
   if [ "$CHECK" != "" ] ; then
-    exit
+    exit 128
   fi
 
   SF_PROBE=""
@@ -844,7 +844,7 @@ Examples: (Download directory to QSPI Flash)
 # Rewrite u-boot (512 KB):
 => sf probe 0 ; sf erase 0 80000 ; sf write $ramaddr 0 80000
 "
-  exit
+  exit 0
   fi
 
   ############ DTB Programming ############
@@ -856,7 +856,7 @@ Examples: (Download directory to QSPI Flash)
 # Program DTB (32 KB)
 => sf probe 0 ; sf erase $SPI_ADDR 40000 ; sf write $ramaddr $SPI_ADDR 8000
 "
-  exit
+  exit 0
   fi
   ############ Kernel Programming ############
   CHECK=$(echo $dlfile | grep Image)
@@ -882,7 +882,7 @@ Examples: (Download directory to QSPI Flash)
         echo "# Program Kernel (${SPI_SZ_MB}MB, $QSPI SPI flash)
   => sf probe 0$SF_PROBE ; sf erase $SPI_ADDR $SPI_SZ_E ; sf write $ramaddr $SPI_ADDR $SPI_SZ_P"
 
-    exit
+    exit 0
   fi
 
   ############ Rootfs Programming ############
@@ -912,7 +912,7 @@ Examples: (Download directory to QSPI Flash)
       echo "Are you sure you have enough SDRAM space? The RSK only has 32MB of SDRAM."
     fi
     echo -e "\n"
-    exit
+    exit 0
   fi
 
 fi
@@ -930,7 +930,7 @@ if [ "$2" == "menuconfig" ] ; then
     echo -e "You need the package ncurses installed in order to use menuconfig."
     echo -e "In Ubuntu, you can install it by running:\n\tsudo apt-get install ncurses-dev\n"
     echo -e "Existing build script.\n"
-    exit
+    exit 1
   fi
 fi
 
@@ -949,7 +949,7 @@ if [ "$1" == "kernel" ] || [ "$1" == "k" ] ; then
     echo " Traditional kernel:  ./build.sh kernel uImage"
     echo "         XIP kernel:  ./build.sh kernel xipImage"
     echo "  Kernel config GUI:  ./build.sh kernel menuconfig"
-    exit
+    exit 0
   fi
 
   if [ "$2" == "uImage" ] ; then
@@ -959,7 +959,7 @@ if [ "$1" == "kernel" ] || [ "$1" == "k" ] ; then
       echo -e "You need the program mkimage installed in order to build a kernel uImage."
       echo -e "In Ubuntu, you can install it by running:\n\tsudo apt-get install u-boot-tools\n"
       echo -e "Existing build script.\n"
-      exit
+      exit 0
     fi
   fi
 
@@ -981,7 +981,7 @@ if [ "$1" == "kernel" ] || [ "$1" == "k" ] ; then
       echo -e "You need git in order to download the kernel"
       echo -e "In Ubuntu, you can install it by running:\n\tsudo apt-get install git\n"
       echo -e "Existing build script.\n"
-      exit
+      exit 1
     fi
 
 
@@ -1046,7 +1046,7 @@ if [ "$1" == "kernel" ] || [ "$1" == "k" ] ; then
       echo "Examples:"
       echo "   ./build.sh kernel uImage 0x08008000"
       echo "   ./build.sh kernel uImage 0x0C008000"
-      exit
+      exit 128
     fi
   fi
   if [ "$2" == "xipImage" ] ;then
@@ -1075,11 +1075,11 @@ if [ "$1" == "kernel" ] || [ "$1" == "k" ] ; then
     #       the command line
     echo -e "make $MY_LOADADDR LOCALVERSION= -j$BUILD_THREADS $2 dtbs\n"
     make $MY_LOADADDR LOCALVERSION= -j$BUILD_THREADS $2 dtbs
+    RETURN_CODE=$?
 
     if [ ! -e vmlinux ] ; then
       # did not build, so exit
       banner_red "Kernel Build failed. Exiting build script."
-      exit
     else
       banner_green "Kernel Build Successful"
     fi
@@ -1088,9 +1088,10 @@ if [ "$1" == "kernel" ] || [ "$1" == "k" ] ; then
       banner_yellow "Custom Build"
       echo -e "make -j$BUILD_THREADS $2 $3 $4\n"
       make -j$BUILD_THREADS $2 $3 $4
+      RETURN_CODE=$?
   fi
 
-  cd $ROOTDIR
+  exit $RETURN_CODE
 fi
 
 ###############################################################################
@@ -1119,7 +1120,7 @@ if [ "$1" == "u-boot" ] || [ "$1" == "u" ] ; then
       echo -e "You need git in order to download the kernel"
       echo -e "In Ubuntu, you can install it by running:\n\tsudo apt-get install git\n"
       echo -e "Existing build script.\n"
-      exit
+      exit 1
     fi
 
     # Download the latest head of the repository
@@ -1163,11 +1164,11 @@ if [ "$1" == "u-boot" ] || [ "$1" == "u" ] ; then
 
     # default build
     make
+    RETURN_CODE=$?
 
     if [ ! -e u-boot.bin ] ; then
       # did not build, so exit
       banner_red "u-boot Build failed. Exiting build script."
-      exit
     else
       banner_green "u-boot Build Successful"
     fi
@@ -1176,9 +1177,10 @@ if [ "$1" == "u-boot" ] || [ "$1" == "u" ] ; then
       banner_yellow "Custom Build"
       echo -e "make $2 $3 $4\n"
       make $2 $3 $4
+      RETURN_CODE=$?
   fi
 
-  cd $ROOTDIR
+  exit $RETURN_CODE
 
 fi
 
@@ -1202,7 +1204,7 @@ if [ "$1" == "buildroot" ]  || [ "$1" == "b" ] ; then
       echo "export BR_VERSION=2017.02" > br_version.txt
     else
       echo "ERROR: \"$ANSWER\" is an invalid selection!"
-      exit
+      exit 128
     fi
     source br_version.txt
   fi
@@ -1311,7 +1313,7 @@ if [ "$1" == "buildroot" ]  || [ "$1" == "b" ] ; then
 
     if [ "$TRY" == "3" ] ; then
       echo -e "\nI give up! I have no idea what you want to do."
-      exit
+      exit 128
     fi
 
     # Copy in our default Buildroot config for the RSK
@@ -1331,6 +1333,7 @@ if [ "$1" == "buildroot" ]  || [ "$1" == "b" ] ; then
 
       # User wants to select the toolchain themselves.
       make menuconfig
+      RETURN_CODE=$?
 
       echo ""
       echo "======================================================================="
@@ -1342,7 +1345,7 @@ if [ "$1" == "buildroot" ]  || [ "$1" == "b" ] ; then
       echo "     ./build.sh buildroot menuconfig"
       echo ""
 
-      exit
+      exit $RETURN_CODE
 
     fi
   fi
@@ -1357,7 +1360,7 @@ if [ "$1" == "buildroot" ]  || [ "$1" == "b" ] ; then
     echo -n "Continue? [y/N] "
     read ANS
     if [ "$ANS" != "y" ] || [ "$ANS" == "Y" ] ; then
-      exit
+      exit 0
     fi
 
     echo "First, we'll remove all the build files from output/build/host-* because once"
@@ -1430,7 +1433,7 @@ if [ "$1" == "buildroot" ]  || [ "$1" == "b" ] ; then
       fi
     done
 
-    exit
+    exit 0
   fi
 
   # Build Buildroot
@@ -1438,11 +1441,11 @@ if [ "$1" == "buildroot" ]  || [ "$1" == "b" ] ; then
 
     # default build
     make
+    RETURN_CODE=$?
 
     if [ ! -e output/images/rootfs.tar ] ; then
       # did not build, so exit
       banner_red "Buildroot Build failed. Exiting build script."
-      exit
     else
       banner_green "Buildroot Build Successful"
     fi
@@ -1451,9 +1454,10 @@ if [ "$1" == "buildroot" ]  || [ "$1" == "b" ] ; then
       banner_yellow "Custom Build"
       echo -e "make $2 $3 $4 $5\n"
       make $2 $3 $4 $5
+      RETURN_CODE=$?
   fi
 
-  cd $ROOTDIR
+  return $RETURN_CODE
 fi
 
 ###############################################################################
@@ -1468,7 +1472,7 @@ if [ "$1" == "axfs" ] ; then
     echo "So, there is no more need for this command anymore".
     echo "You can find your AXFS image here:"
     echo "  output/buildroot-$BR_VERSION/output/images/rootfs.axfs"
-    exit
+    exit 0
   fi
 
   # Just use the pre-build versions
@@ -1488,16 +1492,17 @@ if [ "$1" == "axfs" ] ; then
     echo ""
     banner_red "Missing output file name"
     echo "Usage: ./build.sh axfs {full-path-to-directory} {output-filename}"
-    exit
+    exit 128
    fi
     $MKFSAXFS -s -a $2 $3
+    RETURN_CODE=$?
 
     if [ -e $3 ] ; then
       banner_green "axfs Build Successful"
       echo -n " File: "
       echo `ls $(pwd)/$3`
     fi
-    exit
+    exit $RETURN_CODE
   fi
 
 
@@ -1512,14 +1517,14 @@ if [ "$1" == "axfs" ] ; then
   if [ ! -e rootfs.axfs.bin ] ; then
     # did not build, so exit
     banner_red "axfs Build failed. Exiting build script."
-    exit
+    exit 1
   else
     banner_green "axfs Build Successful"
     echo -e "You can find your AXFS image to flash here:"
     echo -e "\t$(pwd)/rootfs.axfs.bin"
   fi
 
-  cd $ROOTDIR
+  exit 0
 fi
 
 ###############################################################################
@@ -1541,14 +1546,14 @@ if [ "$1" == "update" ] ; then
     echo -e "  ./build.sh update u   # updates uboot source"
     echo -e "  ./build.sh update k   # updates kernel source "
     echo -e ""
-    exit
+    exit 0
   fi
 
   if [ "$2" == "b" ] ; then
     git stash
     git pull
     git stash pop
-    exit
+    exit 0
   fi
 
   if [ "$2" == "k" ] ; then
@@ -1562,7 +1567,7 @@ if [ "$1" == "update" ] ; then
       git pull
       git stash pop
     fi
-    exit
+    exit 0
   fi
 
   if [ "$2" == "u" ] ; then
@@ -1576,7 +1581,7 @@ if [ "$1" == "update" ] ; then
       git pull
       git stash pop
     fi
-    exit
+    exit 0
   fi
 fi
 
