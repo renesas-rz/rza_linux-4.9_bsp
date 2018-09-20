@@ -1457,7 +1457,7 @@ if [ "$1" == "buildroot" ]  || [ "$1" == "b" ] ; then
       RETURN_CODE=$?
   fi
 
-  return $RETURN_CODE
+  exit $RETURN_CODE
 fi
 
 ###############################################################################
