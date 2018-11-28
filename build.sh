@@ -576,7 +576,7 @@ FILE3=output/linux-4.9/arch/arm/boot/uImage
 FILE4=output/linux-4.9/arch/arm/boot/xipImage
 FILE5=output/buildroot-$BR_VERSION/output/images/rootfs.squashfs
 FILE6=output/buildroot-$BR_VERSION/output/images/rootfs.axfs
-FILE7=output/buildroot-$BR_VERSION/output/images/cramfs.axfs
+FILE7=output/buildroot-$BR_VERSION/output/images/rootfs.cramfs
 FILE8=output/axfs/rootfs.axfs.bin
 
   if [ "$2" == "" ] ; then
@@ -598,7 +598,9 @@ Examples: (shortcut names)
     fi
     if [ -e $FILE5 ] ; then echo "  ./build.sh jlink rootfs_squashfs     # Root File System"
     fi
-    if [ -e $FILE6 ] || [ -e $FILE7 ] ; then echo "  ./build.sh jlink rootfs_axfs         # Root File System"
+    if [ -e $FILE6 ] || [ -e $FILE8 ] ; then echo "  ./build.sh jlink rootfs_axfs         # Root File System"
+    fi
+    if [ -e $FILE7 ] ; then echo "  ./build.sh jlink rootfs_cramfs       # Root File System"
     fi
 
     echo "
@@ -619,7 +621,7 @@ Examples: (file number)
     fi
     if [ -e $FILE7 ] ; then  echo "    7 = $FILE7"
     fi
-    if [ -e $FILE8 ] ; then  echo "    7 = $FILE8"
+    if [ -e $FILE8 ] ; then  echo "    8 = $FILE8"
     fi
 
   echo "
@@ -633,6 +635,7 @@ Examples: (Download directory to QSPI Flash)
   ./build.sh jlink xipImage $KERNEL_ADDR
   ./build.sh jlink rootfs_squashfs $ROOTFS_ADDR
   ./build.sh jlink rootfs_axfs $ROOTFS_ADDR
+  ./build.sh jlink rootfs_cramfs $ROOTFS_ADDR
 "
     fi
     echo -ne "\033[1;31m" # RED TEXT
