@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #include <fcntl.h>
 #include <sys/ioctl.h>
@@ -43,10 +44,11 @@ static struct regval_list ov7670_default_regs[] = {
 	{ REG_CLKRC, 0x1 },	/* OV: clock scale (30 fps) */
 	{ REG_TSLB,  0x00 },	/* Set YUV orders (in combination with REG_COM13) */
 
-	{REG_COM13, COM13_GAMMA | COM13_UVSAT}, /* Gamma enable, UV sat enable, UYVY or VYUY (see TSLB_REG) */
+// Set by ov7670_formats
+//	{REG_COM13, COM13_GAMMA | COM13_UVSAT}, /* Gamma enable, UV sat enable, UYVY or VYUY (see TSLB_REG) */
 
-	{ REG_COM7, 0 },	/* VGA */
-
+// Set by ov7670_formats
+//	{ REG_COM7, 0 },	/* VGA */
 
 	/*
 	 * Set the hardware window.  These values from OV don't entirely
@@ -228,33 +230,54 @@ static struct regval_list ov7670_fmt_raw[] = {
 
 static int ov7670_read(unsigned char reg, unsigned char *value)
 {
-	int ret;
+	ssize_t ret;
 
-	if( write(ov7670_fd, &reg, 1) != 1) {
+	ret = write(ov7670_fd, &reg, 1);
+	if (ret != 1) {
 #ifdef DEBUG
-		printf("ov7670_read error (setting reg=0x%X)\n",reg);
+		printf("ov7670_read error: write reg=0x%02X, ret=%d(%s)\n", reg, ret, strerror(errno));
 #endif
 		return -1;
 	}
-	if( read(ov7670_fd, value, 1) != 1) {
+	ret = read(ov7670_fd, value, 1);
+	if (ret != 1) {
 #ifdef DEBUG
-		printf("ov7670_read error (read reg=0x%X)\n",reg);
+		printf("ov7670_read error: read reg=0x%02X, ret=%d(%s)\n", reg, ret, strerror(errno));
 		return -1;
 #endif
 	}
+
+#ifdef DEBUG
+	printf("ov7670_read: 0x%02X=0x%02X\n", reg, *value);
+#endif
 	return 0;	
 }
 
 static int ov7670_write(unsigned char reg, unsigned char value)
 {
 	uint8_t data[2];
+	ssize_t ret = -1;
+	int retry = 10;
 
 	data[0] = reg;
 	data[1] = value;
 
-	if( write(ov7670_fd, data, 2) != 2) {
+	/* Sometimes the i2c is busy, so you need to retry */
+	while ( retry-- ) {
+		ret = write(ov7670_fd, data, 2);
+		if (ret < 0)
+			usleep(1000);
+		else
+			break;
+	}
 #ifdef DEBUG
-		printf("ov7670_write (reg=0x%X)\n",reg);
+	if( retry != 9)
+		printf("\t\ti2c write took %d retries\n",9-retry);
+#endif
+
+	if (ret != 2) {
+#ifdef DEBUG
+		printf("ov7670_write error: reg=0x%02X, ret=%d(%s)\n", reg, ret, strerror(errno));
 #endif
 		return -1;
 	}
@@ -269,7 +292,13 @@ static int ov7670_write(unsigned char reg, unsigned char value)
 static int ov7670_write_array(struct regval_list *vals)
 {
 	int ret;
+#ifdef DEBUG
+	printf("Setting OV7670 registers:\n");
+#endif
 	while (vals->reg_num != 0xff || vals->value != 0xff) {
+#ifdef DEBUG
+		printf("\t0x%02X=0x%02X\n", vals->reg_num, vals->value);
+#endif
 		ret = ov7670_write(vals->reg_num, vals->value);
 		if (ret < 0)
 			return ret;
@@ -485,7 +514,7 @@ static int ov7670_set_hw(int hstart, int hstop,	int vstart, int vstop)
 	ret += ov7670_write(REG_HSTOP, (hstop >> 3) & 0xff);
 	ret += ov7670_read(REG_HREF, &v);
 	v = (v & 0xc0) | ((hstop & 0x7) << 3) | (hstart & 0x7);
-	usleep(1000);
+	usleep(10000);
 	ret += ov7670_write(REG_HREF, v);
 /*
  * Vertical: similar arrangement, but only 10 bits.
@@ -494,7 +523,7 @@ static int ov7670_set_hw(int hstart, int hstop,	int vstart, int vstop)
 	ret += ov7670_write(REG_VSTOP, (vstop >> 2) & 0xff);
 	ret += ov7670_read(REG_VREF, &v);
 	v = (v & 0xf0) | ((vstop & 0x3) << 2) | (vstart & 0x3);
-	usleep(1000);
+	usleep(10000);
 	ret += ov7670_write(REG_VREF, v);
 	return ret;
 }
@@ -589,8 +618,7 @@ int ov7670_set_format( int image_format, int resolution, int out_format)
 	 * to write it unconditionally, and that will make the frame
 	 * rate persistent too.
 	 */
-	if (ret == 0)
-		//ret = ov7670_write(REG_CLKRC, info->clkrc);
+	if (image_format == 2)
 		ret = ov7670_write(REG_CLKRC, 1);
 
 	return 0;
@@ -808,7 +836,6 @@ int ov7670_open(char *i2c_dev_path)
 
 	ov7670_fd = open(i2c_dev_path, O_RDWR);
 	if (ov7670_fd < 0) {
-		printf("ov7670_open");
 		return -1;
 	}
 
@@ -821,10 +848,16 @@ int ov7670_open(char *i2c_dev_path)
 	ret = ov7670_detect();
 	if (ret) {
 #ifdef DEBUG
-		printf("chip found, but is not an ov7670 chip.\n");
+		printf("OV7670 not found on bus %s\n",i2c_dev_path);
 #endif
 		return ret;
 	}
+
+#ifdef DEBUG
+		printf("OV7670 found on bus %s\n",i2c_dev_path);
+#endif
+
+	ov7670_reset(0);
 
 	ret = ov7670_write_array(ov7670_default_regs);
 	if (ret < 0) {
@@ -839,7 +872,7 @@ int ov7670_open(char *i2c_dev_path)
 	ov7670_s_vflip(0);	/* 0 to 1 (0) */
 
 	ov7670_s_sat_hue(128, 0);
-	
+
 	ov7670_s_autoexp(0);
 	ov7670_s_autoexp(1);
 
