@@ -1,0 +1,79 @@
+
+
+
+=== Modifying Graphic Layers at run-time ===
+It is possible to modify the graphic layers after boot.
+At run-time, you will find the follow sysfs file:
+
+	RZA1: ch0 = /sys/devices/platform/fcff7400.display/
+	      ch1 = /sys/devices/platform/fcff9400.display/
+
+	RZA2: ch0 = /sys/devices/platform/fcff7400.display/
+
+They will show the current settings for the graphic layers.
+
+You can see that by doing:
+$ cat /sys/devices/platform/fcff7400.display/layer2
+
+For example:
+
+$ cat /sys/devices/platform/fcff7400.display/layer2
+xres = 800
+yres = 480
+x_offset = 0
+y_offset = 0
+base = 0x80000000
+bpp = 16
+format = RGB565
+read_swap = swap_32_16
+blend = 0
+
+
+
+To modify any or all of these values, simply pass them back to that same file with new values.
+The values must be either separated by a newline, or by a comma.
+
+For example:
+  $ echo "x_offset = 100 , y_offset = 100" > /sys/devices/platform/fcff7400.display/layer2
+  $ echo -e "x_offset = 100 \n y_offset = 100" > /sys/devices/platform/fcff7400.display/layer2
+
+Example:
+$ cat /sys/devices/platform/fcff7400.display/layer2 > /tmp/layer2.txt
+$ vi /tmp/layer2.txt
+$ cat /tmp/layer2.txt > /sys/devices/platform/fcff7400.display/layer2
+
+
+When choosing a format, below are the valid strings you can pass:
+	RGB565
+	RGB888
+	ARGB1555
+	ARGB4444
+	ARGB8888
+	CLUT8
+	CLUT4
+	CLUT1
+	YCbCr422
+	YCbCr444
+	RGBA5551
+	YCbCr422_0		(Cb/Y0/Cr/Y1)
+	YCbCr422_1		(Y0/Cb/Y1/Cr)
+	YCbCr422_2		(Cr/Y0/Cb/Y1)
+	YCbCr422_3		(Y0/Cr/Y1/Cb)
+	YCbCr422_4		(Y1/Cr/Y0/Cb)
+	YCbCr422_5		(Cr/Y1/Cb/Y0)
+	YCbCr422_6		(Y1/Cb/Y0/Cr)
+	YCbCr422_7		(Cb/Y1/Cr/Y0)
+
+
+When choosing a 'read_swap', below are the valid strings you can pass.
+See register bits GRx_FLM:GRx_RDSWA in the hardware manual for more details.
+	no_swap
+	swap_8
+	swap_16
+	swap_16_8
+	swap_32
+	swap_32_8
+	swap_32_16
+	swap_32_16_8
+NOTE: Make sure 'read_swap =' is specificed after 'format =' (since 'format' always set GRx_RDSWA to 0 (no_swap))
+
