@@ -141,6 +141,8 @@ int detect_video(void)
 	/* Print Screen Statistics */
 	printf("Screen Resolution: %dx%d (%d bpp)\n",lcd_width,lcd_height, lcd_bytes_per_pixel*8);
 	printf("Frame Buffer Physical Address: %p\n",lcd_fb_phys);
+
+	return 0;
 }
 
 int module_clock_enable(int mstp)
